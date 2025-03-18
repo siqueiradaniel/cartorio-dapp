@@ -53,7 +53,7 @@ function App() {
 
     return (
         <div style={{ padding: "20px" }}>
-            <h2>Simple Contract Factory</h2>
+            <h2></h2>
             <p>Implante novos contratos com um número inicial:</p>
 
             <input
@@ -67,9 +67,9 @@ function App() {
             <h3>Contratos Implantados</h3>
             <ul>
                 {students.length > 0 ? (
-                    students.map((address, index) => (
-                        <li key={index}>{address}</li>
-                    ))
+                    students.map((codinome, index) => (
+                        <li key={index}>{codinome}</li>
+                    ))            
                 ) : (
                     <p>Nenhum contrato implantado ainda.</p>
                 )}

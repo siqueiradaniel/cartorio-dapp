@@ -16,6 +16,10 @@ contract Student {
     constructor(string memory _codinome, uint256 _points, address _addr) {
         student = StudentData(_codinome, _points, _addr);
     }
+
+    function getStudentData() public view returns (string memory, uint256, address) {
+        return (student.codinome, student.points, student.addr);
+    }
 }
 
 contract Token {
@@ -26,7 +30,18 @@ contract Token {
         students.push(student);
     }
 
-    function getDeployedContracts() public view returns (Student[] memory) {
-        return students;
+    function getDeployedContracts() public view returns (string[] memory, uint256[] memory, address[] memory) {
+        uint length = students.length;
+
+        string[] memory codinomes = new string[](length);
+        uint256[] memory points = new uint256[](length);
+        address[] memory addresses = new address[](length);
+
+        for (uint i = 0; i < length; i++) {
+            (codinomes[i], points[i], addresses[i]) = students[i].getStudentData();
+        }
+
+        // Return all arrays containing struct data
+        return (codinomes, points, addresses);
     }
 }
