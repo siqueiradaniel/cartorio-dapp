@@ -17,6 +17,7 @@ function App() {
     const [newOwners, setNewOwners] = useState({});
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [userAddress, setUserAddress] = useState(null);
 
     const setupContract = async () => {
         try {
@@ -27,6 +28,7 @@ function App() {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
+            setUserAddress(signer.address);
             return {contract, signer};
         } catch (error) {
             throw new Error(error.reason || error.revert?.args?.[0] || "Usuário não autorizado!");
@@ -52,7 +54,7 @@ function App() {
     };
 
     // Create a new property
-    const createProperty = async () => {
+    const createProperty = async (category, location, area, owner) => {
         if (category === "" || location === "" || area === "" || owner === "") return;
         try {
             const { contract, } = await setupContract();
@@ -64,11 +66,10 @@ function App() {
     };
 
     // Sell a property
-    const sellProperty = async (id) => {
-        if (!newOwners[id]) return;
+    const sellProperty = async (id, newOwner) => {
         try {
             const { contract, } = await setupContract();
-            const tx = await contract.sellProperty(id, newOwners[id]);
+            const tx = await contract.sellProperty(id, newOwner);
             await tx.wait();
         } catch (error) {
             console.error("Erro ao vender propriedade:", error);
@@ -146,18 +147,7 @@ function App() {
         return (
             <AdminView
                 properties={properties}
-                newOwners={newOwners}
-                handleNewOwnerChange={handleNewOwnerChange}
-                sellProperty={sellProperty}
                 createProperty={createProperty}
-                category={category}
-                setCategory={setCategory}
-                location={location}
-                setLocation={setLocation}
-                area={area}
-                setArea={setArea}
-                owner={owner}
-                setOwner={setOwner}
                 onLogout={handleLogout}
             />
         );
@@ -166,10 +156,9 @@ function App() {
     return (
         <UserView
             properties={properties}
-            newOwners={newOwners}
-            handleNewOwnerChange={handleNewOwnerChange}
             sellProperty={sellProperty}
             onLogout={handleLogout}
+            //userAddress={userAddress}
         />
     );
 }
