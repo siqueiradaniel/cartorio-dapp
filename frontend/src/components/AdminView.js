@@ -1,6 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 const AdminView = ({ properties, newOwners, handleNewOwnerChange, sellProperty, createProperty, category, setCategory, location, setLocation, area, setArea, owner, setOwner, onLogout }) => {
+    const [searchQuery, setSearchQuery] = useState("");
+
+    // Filtra propriedades com base na localização
+    const filteredProperties = properties.filter(property =>
+        property.location.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div style={{ padding: "20px" }}>
             <button onClick={onLogout}>Logout</button>
@@ -34,9 +41,19 @@ const AdminView = ({ properties, newOwners, handleNewOwnerChange, sellProperty, 
             <button onClick={createProperty}>Criar Propriedade</button>
 
             <h3>Propriedades Implantadas</h3>
+
+            {/* Campo de busca */}
+            <input
+                type="text"
+                placeholder="Buscar por localização"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ marginBottom: "10px", padding: "5px" }}
+            />
+
             <ul>
-                {properties.length > 0 ? (
-                    properties.map((property, index) => (
+                {filteredProperties.length > 0 ? (
+                    filteredProperties.map((property, index) => (
                         <li key={index}>
                             <p>ID: {property.id}</p>
                             <p>Categoria: {property.category}</p>
@@ -53,7 +70,7 @@ const AdminView = ({ properties, newOwners, handleNewOwnerChange, sellProperty, 
                         </li>
                     ))
                 ) : (
-                    <p>Nenhuma propriedade implantada ainda.</p>
+                    <p>Nenhuma propriedade encontrada.</p>
                 )}
             </ul>
         </div>
