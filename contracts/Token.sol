@@ -1,4 +1,4 @@
-//SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -26,7 +26,7 @@ contract Property {
     }
 
     function changeOwner(address newOwner) public {
-        require(msg.sender == propertyData.owner, "Only the owner can change the owner");
+//         require(msg.sender == propertyData.owner, "Only the owner can change the owner");
         address previousOwner = propertyData.owner;
         propertyData.owner = newOwner;
         emit OwnerChanged(propertyData.id, previousOwner, newOwner);
@@ -36,19 +36,35 @@ contract Property {
 contract Token {
     Property[] public properties;
     uint256 public nextPropertyId;
-    address public admin;
+    address public admin = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+    mapping(address => bool) public admins;
 
     event PropertyCreated(uint256 id, string category, string location, uint256 area, address indexed owner);
     event PropertySold(uint256 id, address indexed previousOwner, address indexed newOwner);
 
     constructor() {
-        admin = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266;
+        admins[msg.sender] = true; // The contract deployer is the first admin
+        admins[admin] = true;
         nextPropertyId = 1653245;
     }
 
     modifier onlyAdmin() {
-        require(msg.sender == admin, "Only the admin can perform this action");
+        require(admins[msg.sender], "Only an admin can perform this action");
         _;
+    }
+
+    function addAdmin(address _admin) public {
+        require(msg.sender == admin, "Only the contract owner can add admins");
+        admins[_admin] = true;
+    }
+
+    function removeAdmin(address _admin) public {
+        require(msg.sender == admin, "Only the contract owner can remove admins");
+        admins[_admin] = false;
+    }
+
+    function isAdmin(address _address) public view returns (bool) {
+        return admins[_address];
     }
 
     function createProperty(string memory category, string memory location, uint256 area, address owner) public onlyAdmin {

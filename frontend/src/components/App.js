@@ -2,6 +2,9 @@ import './../css/App.css';
 import { ethers } from 'ethers';
 import { React, useState, useEffect } from 'react';
 import TokenArtifact from "../contracts/Token.json";
+import Login from './Login';
+import AdminView from './AdminView';
+import UserView from './UserView';
 
 const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
@@ -12,6 +15,8 @@ function App() {
     const [area, setArea] = useState("");
     const [owner, setOwner] = useState("");
     const [newOwners, setNewOwners] = useState({});
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     const setupContract = async () => {
         try {
@@ -20,9 +25,9 @@ function App() {
             }
 
             const provider = new ethers.BrowserProvider(window.ethereum);
-            const _signer = await provider.getSigner();
-            const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, _signer);
-            return contract;
+            const signer = await provider.getSigner();
+            const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
+            return {contract, signer};
         } catch (error) {
             throw new Error(error.reason || error.revert?.args?.[0] || "Usuário não autorizado!");
         }
@@ -31,7 +36,7 @@ function App() {
     // Fetch deployed properties
     const fetchProperties = async () => {
         try {
-            const contract = await setupContract();
+            const { contract, } = await setupContract();
             const [ids, categories, locations, areas, owners] = await contract.getDeployedContracts();
             const properties = ids.map((id, index) => ({
                 id,
@@ -50,7 +55,7 @@ function App() {
     const createProperty = async () => {
         if (category === "" || location === "" || area === "" || owner === "") return;
         try {
-            const contract = await setupContract();
+            const { contract, } = await setupContract();
             const tx = await contract.createProperty(category, location, parseInt(area), owner);
             await tx.wait();
         } catch (error) {
@@ -62,7 +67,7 @@ function App() {
     const sellProperty = async (id) => {
         if (!newOwners[id]) return;
         try {
-            const contract = await setupContract();
+            const { contract, } = await setupContract();
             const tx = await contract.sellProperty(id, newOwners[id]);
             await tx.wait();
         } catch (error) {
@@ -77,97 +82,95 @@ function App() {
         }));
     };
 
+    const handleLogin = async () => {
+        try {
+            const { contract, signer } = await setupContract();
+            const address = signer.address;
+            setIsLoggedIn(true);
+            const isAdmin = await contract.isAdmin(address);
+            console.log(isAdmin, address);
+            setIsAdmin(isAdmin);
+        } catch (error) {
+            console.error("Erro ao fazer login:", error);
+        }
+    };
+
+    const handleLogout = () => {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+    };
+
     useEffect(() => {
-        fetchProperties();
+        if (isLoggedIn) {
+            fetchProperties();
 
-        const listenToEvents = async () => {
-            const contract = await setupContract();
+            const listenToEvents = async () => {
+                const { contract, } = await setupContract();
 
-            contract.on("PropertyCreated", (id, category, location, area, owner) => {
-                setProperties(prevProperties => [
-                    ...prevProperties,
-                    { id, category, location, area: parseInt(area), owner }
-                ]);
-            });
+                contract.on("PropertyCreated", (id, category, location, area, owner) => {
+                    setProperties(prevProperties => [
+                        ...prevProperties,
+                        { id, category, location, area: parseInt(area), owner }
+                    ]);
+                });
 
-            contract.on("PropertySold", (id, previousOwner, newOwner) => {
-                setProperties(prevProperties =>
-                    prevProperties.map(property =>
-                        property.id === id
-                            ? { ...property, owner: newOwner }
-                            : property
-                    )
-                );
-            });
-        };
-
-        listenToEvents();
-
-        return () => {
-            const removeEventListener = async () => {
-                const contract = await setupContract();
-                contract.removeListener("PropertyCreated");
-                contract.removeListener("PropertySold");
+                contract.on("PropertySold", (id, previousOwner, newOwner) => {
+                    setProperties(prevProperties =>
+                        prevProperties.map(property =>
+                            property.id === id
+                                ? { ...property, owner: newOwner }
+                                : property
+                        )
+                    );
+                });
             };
-            removeEventListener();
-        };
-    }, []);
+
+            listenToEvents();
+
+            return () => {
+                const removeEventListener = async () => {
+                    const { contract, } = await setupContract();
+                    contract.removeListener("PropertyCreated");
+                    contract.removeListener("PropertySold");
+                };
+                removeEventListener();
+            };
+        }
+    }, [isLoggedIn]);
+
+    if (!isLoggedIn) {
+        return <Login onLogin={handleLogin} />;
+    }
+
+    if (isAdmin) {
+        return (
+            <AdminView
+                properties={properties}
+                newOwners={newOwners}
+                handleNewOwnerChange={handleNewOwnerChange}
+                sellProperty={sellProperty}
+                createProperty={createProperty}
+                category={category}
+                setCategory={setCategory}
+                location={location}
+                setLocation={setLocation}
+                area={area}
+                setArea={setArea}
+                owner={owner}
+                setOwner={setOwner}
+                onLogout={handleLogout}
+            />
+        );
+    }
 
     return (
-        <div style={{ padding: "20px" }}>
-            <h2>Gerenciamento de Propriedades</h2>
-            <p>Crie novas propriedades:</p>
-
-            <input
-                type="text"
-                placeholder="Categoria"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-            />
-            <input
-                type="text"
-                placeholder="Localização"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-            />
-            <input
-                type="number"
-                placeholder="Área"
-                value={area}
-                onChange={(e) => setArea(e.target.value)}
-            />
-            <input
-                type="text"
-                placeholder="Proprietário"
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-            />
-            <button onClick={createProperty}>Criar Propriedade</button>
-
-            <h3>Propriedades Implantadas</h3>
-            <ul>
-                {properties.length > 0 ? (
-                    properties.map((property, index) => (
-                        <li key={index}>
-                            <p>ID: {property.id}</p>
-                            <p>Categoria: {property.category}</p>
-                            <p>Localização: {property.location}</p>
-                            <p>Área: {property.area}</p>
-                            <p>Proprietário: {property.owner}</p>
-                            <input
-                                type="text"
-                                placeholder="Novo Proprietário"
-                                value={newOwners[property.id] || ""}
-                                onChange={(e) => handleNewOwnerChange(property.id, e.target.value)}
-                            />
-                            <button onClick={() => sellProperty(property.id)}>Vender Propriedade</button>
-                        </li>
-                    ))
-                ) : (
-                    <p>Nenhuma propriedade implantada ainda.</p>
-                )}
-            </ul>
-        </div>
+        <UserView
+            properties={properties}
+            newOwners={newOwners}
+            handleNewOwnerChange={handleNewOwnerChange}
+            sellProperty={sellProperty}
+            onLogout={handleLogout}
+        />
     );
 }
 
