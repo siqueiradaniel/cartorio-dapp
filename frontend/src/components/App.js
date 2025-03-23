@@ -11,6 +11,7 @@ function App() {
     const [location, setLocation] = useState("");
     const [area, setArea] = useState("");
     const [owner, setOwner] = useState("");
+    const [newOwners, setNewOwners] = useState({});
 
     const setupContract = async () => {
         try {
@@ -52,14 +53,64 @@ function App() {
             const contract = await setupContract();
             const tx = await contract.createProperty(category, location, parseInt(area), owner);
             await tx.wait();
-            fetchProperties();
         } catch (error) {
             console.error("Erro ao criar propriedade:", error);
         }
     };
 
+    // Sell a property
+    const sellProperty = async (id) => {
+        if (!newOwners[id]) return;
+        try {
+            const contract = await setupContract();
+            const tx = await contract.sellProperty(id, newOwners[id]);
+            await tx.wait();
+        } catch (error) {
+            console.error("Erro ao vender propriedade:", error);
+        }
+    };
+
+    const handleNewOwnerChange = (id, value) => {
+        setNewOwners(prevState => ({
+            ...prevState,
+            [id]: value
+        }));
+    };
+
     useEffect(() => {
         fetchProperties();
+
+        const listenToEvents = async () => {
+            const contract = await setupContract();
+
+            contract.on("PropertyCreated", (id, category, location, area, owner) => {
+                setProperties(prevProperties => [
+                    ...prevProperties,
+                    { id, category, location, area: parseInt(area), owner }
+                ]);
+            });
+
+            contract.on("PropertySold", (id, previousOwner, newOwner) => {
+                setProperties(prevProperties =>
+                    prevProperties.map(property =>
+                        property.id === id
+                            ? { ...property, owner: newOwner }
+                            : property
+                    )
+                );
+            });
+        };
+
+        listenToEvents();
+
+        return () => {
+            const removeEventListener = async () => {
+                const contract = await setupContract();
+                contract.removeListener("PropertyCreated");
+                contract.removeListener("PropertySold");
+            };
+            removeEventListener();
+        };
     }, []);
 
     return (
@@ -103,6 +154,13 @@ function App() {
                             <p>Localização: {property.location}</p>
                             <p>Área: {property.area}</p>
                             <p>Proprietário: {property.owner}</p>
+                            <input
+                                type="text"
+                                placeholder="Novo Proprietário"
+                                value={newOwners[property.id] || ""}
+                                onChange={(e) => handleNewOwnerChange(property.id, e.target.value)}
+                            />
+                            <button onClick={() => sellProperty(property.id)}>Vender Propriedade</button>
                         </li>
                     ))
                 ) : (
