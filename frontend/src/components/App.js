@@ -10,11 +10,6 @@ const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 function App() {
     const [properties, setProperties] = useState([]);
-    const [category, setCategory] = useState("");
-    const [location, setLocation] = useState("");
-    const [area, setArea] = useState("");
-    const [owner, setOwner] = useState("");
-    const [newOwners, setNewOwners] = useState({});
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
     const [userAddress, setUserAddress] = useState(null);
@@ -76,13 +71,6 @@ function App() {
         }
     };
 
-    const handleNewOwnerChange = (id, value) => {
-        setNewOwners(prevState => ({
-            ...prevState,
-            [id]: value
-        }));
-    };
-
     const handleLogin = async () => {
         try {
             const { contract, signer } = await setupContract();
@@ -101,43 +89,77 @@ function App() {
         setIsAdmin(false);
     };
 
-    useEffect(() => {
-        if (isLoggedIn) {
-            fetchProperties();
+      // PropertyCreated event listener function
+    const listeningPropertyCreated = async () => {
+        try {
+            const { contract, } = await setupContract();
 
-            const listenToEvents = async () => {
-                const { contract, } = await setupContract();
+            // Listen to the PropertyCreated event
+            contract.on("PropertyCreated", (id, category, location, area, owner) => {
+                console.log(`PropertyCreated event: id=${id}, category=${category}, location=${location}, area=${area}, owner=${owner}`);
 
-                contract.on("PropertyCreated", (id, category, location, area, owner) => {
-                    setProperties(prevProperties => [
-                        ...prevProperties,
-                        { id, category, location, area: parseInt(area), owner }
-                    ]);
-                });
+                // You can process the data from the event and update the state
+                setProperties(prevProperties => [
+                    ...prevProperties,
+                    { id, category, location, area: parseInt(area), owner }
+                ]);
+            });
 
-                contract.on("PropertySold", (id, previousOwner, newOwner) => {
-                    setProperties(prevProperties =>
-                        prevProperties.map(property =>
-                            property.id === id
-                                ? { ...property, owner: newOwner }
-                                : property
-                        )
-                    );
-                });
-            };
-
-            listenToEvents();
-
+            // Cleanup function to remove listener
             return () => {
-                const removeEventListener = async () => {
-                    const { contract, } = await setupContract();
-                    contract.removeListener("PropertyCreated");
-                    contract.removeListener("PropertySold");
-                };
-                removeEventListener();
+                contract.off("PropertyCreated"); // Remove listener
             };
+        } catch (error) {
+            alert(error.reason || error.message || "Erro em PropertyCreated!");
         }
-    }, [isLoggedIn]);
+    };
+
+    // PropertySold event listener function
+    const listeningPropertySold = async () => {
+        try {
+            const { contract, } = await setupContract();
+
+            // Listen to the PropertySold event
+            contract.on("PropertySold", (id, previousOwner, newOwner) => {
+                console.log(`PropertySold event: id=${id}, previousOwner=${previousOwner}, newOwner=${newOwner}`);
+
+                // Update properties after sale
+                setProperties(prevProperties =>
+                    prevProperties.map(property =>
+                        property.id === id
+                            ? { ...property, owner: newOwner }
+                            : property
+                    )
+                );
+            });
+
+            // Cleanup function to remove listener
+            return () => {
+                contract.off("PropertySold"); // Remove listener
+            };
+        } catch (error) {
+            alert(error.reason || error.message || "Erro em PropertySold!");
+        }
+    };
+
+    // useEffect to handle event listeners and cleanups
+    useEffect(() => {
+        fetchProperties();
+        const setupListeners = async () => {
+            const cleanupPropertyCreated = await listeningPropertyCreated();
+            const cleanupPropertySold = await listeningPropertySold();
+
+            // Cleanup on component unmount
+            return () => {
+                cleanupPropertyCreated();
+                cleanupPropertySold();
+            };
+        };
+
+        setupListeners();
+    }, []);  // Empty dependency array ensures this effect runs only once when the component mounts
+
+    
 
     if (!isLoggedIn) {
         return <Login onLogin={handleLogin} />;
