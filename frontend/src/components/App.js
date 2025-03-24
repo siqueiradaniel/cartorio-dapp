@@ -158,7 +158,7 @@ function App() {
             properties={properties}
             sellProperty={sellProperty}
             onLogout={handleLogout}
-            //userAddress={userAddress}
+            userAddress={userAddress}
         />
     );
 }

@@ -4,7 +4,7 @@ const UserView = ({
     properties,
     sellProperty,
     onLogout,
-    //userAddress, // Assuming the userAddress is passed as a prop
+    userAddress, // Assuming the userAddress is passed as a prop
 }) => {
     const [newOwner, setNewOwner] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
@@ -12,7 +12,7 @@ const UserView = ({
     const dialogRef = useRef(null); // Reference to the dialog
 
     // Filter properties that belong to the logged-in user
-    //properties = properties.filter((property) => property.owner === userAddress);
+    const myProperties = properties.filter((property) => property.owner === userAddress);
 
     const handleSellClick = async (propertyId) => {
         if (!newOwner) {
@@ -45,7 +45,7 @@ const UserView = ({
             <div className="flex justify-between items-center bg-gray-200 py-6 px-24">
 
                 {/* Input with Search Icon */}
-                <div className="relative w-1/2">
+                <div className="relative w-1/2 mx-auto">
                     <input
                         type="text"
                         placeholder="Buscar localização..."
@@ -63,6 +63,7 @@ const UserView = ({
                     </button>
                 </div>
 
+                {/* Logout Button */}
                 <button
                     onClick={onLogout}
                     className="bg-red-500 text-white px-12 py-4 rounded-lg"
@@ -72,12 +73,13 @@ const UserView = ({
                 </button>
             </div>
 
+
             {/* Property List */}
             <div className="flex mt-24 items-center justify-center">
                 <div className="w-1/2">
                     {filteredProperties.length > 0 ? (
                         <ul>
-                            {filteredProperties.map((property, index) => (
+                            {(searchQuery === "" ? myProperties : filteredProperties).map((property, index) => (
                                 <li key={index} className="bg-white p-4 shadow flex justify-between items-center">
                                     <div>
                                         <p className="font-semibold">{property.category}</p>
@@ -122,33 +124,36 @@ const UserView = ({
                                                             <span>View on Google Maps</span>
                                                             <i className="fas fa-arrow-right text-gray-500 w-5 h-5"></i>
                                                         </a>
-                                                        
                                                     </li>
-                                                    {/* Sell Property Action */}
-                                                    <li className="flex justify-between items-center p-3 hover:bg-gray-100 rounded-lg cursor-pointer">
-                                                        <div className="flex items-center w-full">
-                                                            <span>Sell property</span>
 
-                                                            {/* Input field to enter new owner address */}
-                                                            <input
-                                                                type="text"
-                                                                className="ml-4 p-2 rounded-md border border-gray-300"
-                                                                placeholder="Enter new owner's address"
-                                                                value={newOwner}
-                                                                onChange={(e) => setNewOwner(e.target.value)} // Update the state with the input value
-                                                            />
+                                                    {/* Conditionally render Sell Property Action */}
+                                                    {searchQuery === "" && (
+                                                        <li className="flex justify-between items-center p-3 hover:bg-gray-100 rounded-lg cursor-pointer">
+                                                            <div className="flex items-center w-full">
+                                                                <span>Sell property</span>
 
-                                                            {/* Sell icon to trigger the action */}
-                                                            <i
-                                                                className="absolute right-9 fas fa-arrow-right text-gray-500 w-5 h-5 ml-4 cursor-pointer"
-                                                                onClick={() => handleSellClick(property.id)} // Trigger sellProperty with the propertyId and newOwner
-                                                            ></i>
-                                                        </div>
-                                                    </li>
+                                                                {/* Input field to enter new owner address */}
+                                                                <input
+                                                                    type="text"
+                                                                    className="ml-4 p-2 rounded-md border border-gray-300"
+                                                                    placeholder="Enter new owner's address"
+                                                                    value={newOwner}
+                                                                    onChange={(e) => setNewOwner(e.target.value)} // Update the state with the input value
+                                                                />
+
+                                                                {/* Sell icon to trigger the action */}
+                                                                <i
+                                                                    className="absolute right-9 fas fa-arrow-right text-gray-500 w-5 h-5 ml-4 cursor-pointer"
+                                                                    onClick={() => handleSellClick(property.id)} // Trigger sellProperty with the propertyId and newOwner
+                                                                ></i>
+                                                            </div>
+                                                        </li>
+                                                    )}
                                                 </ul>
                                             </div>
                                         </div>
                                     )}
+
 
                                 </li>
                             ))}
