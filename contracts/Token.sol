@@ -52,16 +52,6 @@ contract Token {
         _;
     }
 
-    function addAdmin(address _admin) public {
-        require(msg.sender == admin, "Only the contract owner can add admins");
-        admins[_admin] = true;
-    }
-
-    function removeAdmin(address _admin) public {
-        require(msg.sender == admin, "Only the contract owner can remove admins");
-        admins[_admin] = false;
-    }
-
     function isAdmin(address _address) public view returns (bool) {
         return admins[_address];
     }
