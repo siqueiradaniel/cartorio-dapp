@@ -6,7 +6,7 @@ import Login from './Login';
 import AdminView from './AdminView';
 import UserView from './UserView';
 
-const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const contractAddress = "0x94472750B8668b49D6900634884E40eE91D0EA3b";
 
 function App() {
     const [properties, setProperties] = useState([]);
