@@ -15,16 +15,37 @@ const AdminView = ({
         location: "",
         area: "",
         owner: "",
+        cep: "",
+        rua: "",
+        numero: "",
+        bairro: "",
+        cidade: "",
+        estado: "",
     });
+
 
     // Handle input changes
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData((prevData) => ({
-            ...prevData,
-            [name]: value,
-        }));
+
+        // Atualizando o estado do formulário com o novo valor
+        setFormData((prevData) => {
+            const newFormData = {
+                ...prevData,
+                [name]: value,
+            };
+
+            // Verifique se algum campo de endereço foi alterado
+            if (['cep', 'rua', 'numero', 'bairro', 'cidade', 'estado'].includes(name)) {
+                // Concatene os campos de endereço e atualize 'location'
+                const location = `${newFormData.rua}, ${newFormData.numero}, ${newFormData.bairro}, ${newFormData.cidade}, ${newFormData.estado}, ${newFormData.cep}`;
+                newFormData.location = location;
+            }
+
+            return newFormData;
+        });
     };
+
 
     const cleanFromData = () => {
         setFormData({
@@ -39,21 +60,21 @@ const AdminView = ({
     const handleSubmit = async (e) => {
         e.preventDefault();
         const { category, location, area, owner } = formData;
-    
+
         // Ensure area is a valid number
         const areaInt = parseInt(area);
         if (isNaN(areaInt)) {
-        alert("Please enter a valid number for area.");
-        return;
+            alert("Please enter a valid number for area.");
+            return;
         }
-    
+
         // Call the createProperty function from App.js
         await createProperty(category, location, areaInt, owner);
         setShowForm(false); // Hide the form after submission
         cleanFromData()
-        
-      };
-    
+
+    };
+
 
 
     // Toggle the dialog visibility
@@ -101,9 +122,9 @@ const AdminView = ({
                     </button>
                 </div>
 
-                <button 
-                    onClick={onLogout} 
-                    className="bg-red-500 text-white px-12 py-4 rounded-lg" 
+                <button
+                    onClick={onLogout}
+                    className="bg-red-500 text-white px-12 py-4 rounded-lg"
                     style={{ backgroundColor: "#8F4F4F" }}
                 >
                     Logout
@@ -129,13 +150,73 @@ const AdminView = ({
                                 />
                             </div>
 
-                            {/* Location Field */}
+                            {/* Address Fields */}
                             <div className="mb-4">
-                                <label className="block text-gray-700">Localização</label>
+                                <label className="block text-gray-700">CEP</label>
                                 <input
                                     type="text"
-                                    name="location"
-                                    value={formData.location}
+                                    name="cep"
+                                    value={formData.cep}
+                                    onChange={handleInputChange}
+                                    className="w-full p-3 border rounded-lg mt-1"
+                                    required
+                                />
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Rua</label>
+                                <input
+                                    type="text"
+                                    name="rua"
+                                    value={formData.rua}
+                                    onChange={handleInputChange}
+                                    className="w-full p-3 border rounded-lg mt-1"
+                                    required
+                                />
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Número</label>
+                                <input
+                                    type="text"
+                                    name="numero"
+                                    value={formData.numero}
+                                    onChange={handleInputChange}
+                                    className="w-full p-3 border rounded-lg mt-1"
+                                    required
+                                />
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Bairro</label>
+                                <input
+                                    type="text"
+                                    name="bairro"
+                                    value={formData.bairro}
+                                    onChange={handleInputChange}
+                                    className="w-full p-3 border rounded-lg mt-1"
+                                    required
+                                />
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Cidade</label>
+                                <input
+                                    type="text"
+                                    name="cidade"
+                                    value={formData.cidade}
+                                    onChange={handleInputChange}
+                                    className="w-full p-3 border rounded-lg mt-1"
+                                    required
+                                />
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-gray-700">Estado</label>
+                                <input
+                                    type="text"
+                                    name="estado"
+                                    value={formData.estado}
                                     onChange={handleInputChange}
                                     className="w-full p-3 border rounded-lg mt-1"
                                     required
@@ -179,6 +260,7 @@ const AdminView = ({
                                 </button>
                             </div>
                         </form>
+
                     </div>
                 </div>
             )}

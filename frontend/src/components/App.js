@@ -86,7 +86,6 @@ function App() {
             const address = signer.address;
             setIsLoggedIn(true);
             const isAdmin = await contract.isAdmin(address);
-            console.log(isAdmin, address);
             setIsAdmin(isAdmin);
         } catch (error) {
             console.error("Erro ao fazer login:", error);

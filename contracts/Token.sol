@@ -26,7 +26,6 @@ contract Property {
     }
 
     function changeOwner(address newOwner) public {
-//         require(msg.sender == propertyData.owner, "Only the owner can change the owner");
         address previousOwner = propertyData.owner;
         propertyData.owner = newOwner;
         emit OwnerChanged(propertyData.id, previousOwner, newOwner);
@@ -97,6 +96,7 @@ contract Token {
             if (propertyId == id) {
                 address previousOwner = propertyOwner;
                 properties[i].changeOwner(newOwner);
+                require(msg.sender == propertyOwner, "Only the owner can change the owner");
                 emit PropertySold(id, previousOwner, newOwner);
                 return;
             }
