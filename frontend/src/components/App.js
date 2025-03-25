@@ -115,7 +115,7 @@ function App() {
 
             // Cleanup function to remove listener
             return () => {
-                contract.off("PropertyCreated"); // Remove listener
+                contract.removeListener("PropertyCreated"); // Remove listener
             };
         } catch (error) {
             alert(error.reason || error.message || "Erro em PropertyCreated!");
@@ -143,7 +143,7 @@ function App() {
 
             // Cleanup function to remove listener
             return () => {
-                contract.off("PropertySold"); // Remove listener
+                contract.removeListener("PropertySold"); // Remove listener
             };
         } catch (error) {
             alert(error.reason || error.message || "Erro em PropertySold!");
