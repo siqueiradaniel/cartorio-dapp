@@ -19,25 +19,25 @@ function App() {
             if (window.ethereum == null) {
                 throw new Error("Usuário não autorizado!1");
             }
-    
+
             // Request account access if not already authorized
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    
+
             if (accounts.length === 0) {
                 throw new Error("Usuário não autorizado!");
             }
-    
+
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
-    
+
             setUserAddress(signer.address);
             return { contract, signer };
         } catch (error) {
             throw new Error(error.reason || error.message || error.revert?.args?.[0] || "Usuário não autorizado!");
         }
     };
-    
+
 
     // Fetch deployed properties
     const fetchProperties = async () => {
@@ -97,89 +97,61 @@ function App() {
         setIsAdmin(false);
     };
 
-      // PropertyCreated event listener function
-    const listeningPropertyCreated = async () => {
-        try {
-            const { contract, } = await setupContract();
-
-            // Listen to the PropertyCreated event
-            contract.on("PropertyCreated", (id, category, location, area, owner) => {
-                console.log(`PropertyCreated event: id=${id}, category=${category}, location=${location}, area=${area}, owner=${owner}`);
-
-                // You can process the data from the event and update the state
-                setProperties(prevProperties => [
-                    ...prevProperties,
-                    { id, category, location, area: parseInt(area), owner }
-                ]);
-            });
-
-            // Cleanup function to remove listener
-            return () => {
-                contract.removeListener("PropertyCreated"); // Remove listener
-            };
-        } catch (error) {
-            alert(error.reason || error.message || "Erro em PropertyCreated!");
-        }
+    // PropertyCreated event listener function
+    const listeningPropertyCreated = async (contract) => {
+        contract.on("PropertyCreated", (id, category, location, area, owner) => {
+            console.log(`PropertyCreated event: id=${id}, category=${category}, location=${location}, area=${area}, owner=${owner}`);
+            setProperties(prevProperties => [
+                ...prevProperties,
+                { id, category, location, area: parseInt(area), owner }
+            ]);
+        });
     };
 
     // PropertySold event listener function
-    const listeningPropertySold = async () => {
-        try {
-            const { contract, } = await setupContract();
-
-            // Listen to the PropertySold event
-            contract.on("PropertySold", (id, previousOwner, newOwner) => {
-                console.log(`PropertySold event: id=${id}, previousOwner=${previousOwner}, newOwner=${newOwner}`);
-
-                // Update properties after sale
-                setProperties(prevProperties =>
-                    prevProperties.map(property =>
-                        property.id === id
-                            ? { ...property, owner: newOwner }
-                            : property
-                    )
-                );
-            });
-
-            // Cleanup function to remove listener
-            return () => {
-                contract.removeListener("PropertySold"); // Remove listener
-            };
-        } catch (error) {
-            alert(error.reason || error.message || "Erro em PropertySold!");
-        }
+    const listeningPropertySold = async (contract) => {
+        contract.on("PropertySold", (id, previousOwner, newOwner) => {
+            console.log(`PropertySold event: id=${id}, previousOwner=${previousOwner}, newOwner=${newOwner}`);
+            setProperties(prevProperties =>
+                prevProperties.map(property =>
+                    property.id === id
+                        ? { ...property, owner: newOwner }
+                        : property
+                )
+            );
+        });
     };
 
     useEffect(() => {
         const fetchAndSetup = async () => {
-            // Wait until fetchProperties is done
             await fetchProperties();
-    
-            // Once fetchProperties completes, setup listeners
-            const setupListeners = async () => {
-                const cleanupPropertyCreated = await listeningPropertyCreated();
-                const cleanupPropertySold = await listeningPropertySold();
-    
-                // Cleanup on component unmount
-                return () => {
-                    cleanupPropertyCreated();
-                    cleanupPropertySold();
-                };
-            };
-    
-            setupListeners();
+
+            // Set up listeners after contract is fetched
+            const { contract } = await setupContract();
+
+            listeningPropertyCreated(contract);
+            listeningPropertySold(contract);
         };
-    
+
         fetchAndSetup();
-    }, []);  // Empty dependency array to run once on mount
-    
-    
+
+        // Cleanup on unmount
+        return () => {
+            if (contract) {
+                contract.removeAllListeners("PropertyCreated");
+                contract.removeAllListeners("PropertySold");
+            }
+        };
+    }, []);
+
+
+
 
     if (!isLoggedIn) {
         return <Login onLogin={handleLogin} />;
     }
 
-    
+
 
     if (isAdmin) {
         return (
