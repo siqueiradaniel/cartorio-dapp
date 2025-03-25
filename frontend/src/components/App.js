@@ -17,18 +17,27 @@ function App() {
     const setupContract = async () => {
         try {
             if (window.ethereum == null) {
+                throw new Error("Usuário não autorizado!1");
+            }
+    
+            // Request account access if not already authorized
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    
+            if (accounts.length === 0) {
                 throw new Error("Usuário não autorizado!");
             }
-
+    
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
             const contract = new ethers.Contract(contractAddress, TokenArtifact.abi, signer);
+    
             setUserAddress(signer.address);
-            return {contract, signer};
+            return { contract, signer };
         } catch (error) {
-            throw new Error(error.reason || error.revert?.args?.[0] || "Usuário não autorizado!");
+            throw new Error(error.reason || error.message || error.revert?.args?.[0] || "Usuário não autorizado!");
         }
     };
+    
 
     // Fetch deployed properties
     const fetchProperties = async () => {
@@ -56,7 +65,7 @@ function App() {
             const tx = await contract.createProperty(category, location, parseInt(area), owner);
             await tx.wait();
         } catch (error) {
-            console.error("Erro ao criar propriedade:", error);
+            alert(error.reason || error.message || "Erro ao criar propriedade!");
         }
     };
 
@@ -142,28 +151,36 @@ function App() {
         }
     };
 
-    // useEffect to handle event listeners and cleanups
     useEffect(() => {
-        fetchProperties();
-        const setupListeners = async () => {
-            const cleanupPropertyCreated = await listeningPropertyCreated();
-            const cleanupPropertySold = await listeningPropertySold();
-
-            // Cleanup on component unmount
-            return () => {
-                cleanupPropertyCreated();
-                cleanupPropertySold();
+        const fetchAndSetup = async () => {
+            // Wait until fetchProperties is done
+            await fetchProperties();
+    
+            // Once fetchProperties completes, setup listeners
+            const setupListeners = async () => {
+                const cleanupPropertyCreated = await listeningPropertyCreated();
+                const cleanupPropertySold = await listeningPropertySold();
+    
+                // Cleanup on component unmount
+                return () => {
+                    cleanupPropertyCreated();
+                    cleanupPropertySold();
+                };
             };
+    
+            setupListeners();
         };
-
-        setupListeners();
-    }, []);  // Empty dependency array ensures this effect runs only once when the component mounts
-
+    
+        fetchAndSetup();
+    }, []);  // Empty dependency array to run once on mount
+    
     
 
     if (!isLoggedIn) {
         return <Login onLogin={handleLogin} />;
     }
+
+    
 
     if (isAdmin) {
         return (

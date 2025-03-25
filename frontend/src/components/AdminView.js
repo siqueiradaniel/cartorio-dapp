@@ -26,6 +26,15 @@ const AdminView = ({
         }));
     };
 
+    const cleanFromData = () => {
+        setFormData({
+            category: "",
+            location: "",
+            area: "",
+            owner: "",
+        })
+    }
+
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -34,13 +43,15 @@ const AdminView = ({
         // Ensure area is a valid number
         const areaInt = parseInt(area);
         if (isNaN(areaInt)) {
-          alert("Please enter a valid number for area.");
-          return;
+        alert("Please enter a valid number for area.");
+        return;
         }
     
         // Call the createProperty function from App.js
         await createProperty(category, location, areaInt, owner);
         setShowForm(false); // Hide the form after submission
+        cleanFromData()
+        
       };
     
 
